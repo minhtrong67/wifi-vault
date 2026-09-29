@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LogOut, Menu, Search, Wifi, X } from 'lucide-react';
 import { NAV } from './nav';
 import SearchPalette from './SearchPalette';
 import ScrollTop from './ScrollTop';
+import { PageSkeleton } from './ui';
 import { useAuth } from '../context/AuthContext';
 
 const linkCls = ({ isActive }) =>
@@ -59,7 +60,10 @@ export default function Layout() {
         <button onClick={() => setSearch(true)} aria-label="Tìm kiếm" className="rounded-lg p-2 text-slate-600 dark:text-zinc-300 transition hover:bg-slate-100 dark:hover:bg-zinc-800"><Search size={20} /></button>
       </header>
 
-      <main className="mx-auto max-w-5xl px-3.5 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8"><Outlet /></main>
+      {/* Chỉ vùng nội dung này hiện skeleton khi tải trang mới — header/sidebar/bottom bar luôn giữ nguyên */}
+      <main className="mx-auto max-w-5xl px-3.5 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
+        <Suspense fallback={<PageSkeleton />}><Outlet /></Suspense>
+      </main>
 
       {/* Bottom bar mobile: 4 tab hay dùng */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">

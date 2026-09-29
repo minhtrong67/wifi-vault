@@ -16,7 +16,7 @@ function WifiCard({ wifi, accent, onEdit, onDelete }) {
     <Swipeable onEdit={() => onEdit(wifi)} onDelete={() => onDelete(wifi)}>
       <div className="flex items-start gap-3 rounded-2xl border border-slate-200 dark:border-zinc-800 p-3 transition hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 md:p-4">
         <span
-          className={`grid size-10 shrink-0 place-items-center rounded-xl text-blue-300 bg-blue-600/10`}
+          className={`grid size-10 shrink-0 place-items-center rounded-xl  bg-blue-600/10 text-blue-300`}
         >
           <Wifi size={18} />
         </span>

@@ -8,7 +8,6 @@ import {
   Search,
   Upload,
   WifiOff,
-  RotateCcw,
 } from "lucide-react";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
@@ -158,12 +157,6 @@ export default function WifiPage() {
     }
   };
 
-  const handleResetFilter = () => {
-    setQ("");
-    setCat("");
-    setSort("name-asc");
-  };
-
   return (
     <div className="space-y-3.5 md:space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -261,13 +254,6 @@ export default function WifiPage() {
             </select>
           </div>
         </div>
-        <Button
-          className="btn-danger px-2.5 w-full"
-          icon={RotateCcw}
-          onClick={handleResetFilter}
-        >
-          Xoá bộ lọc
-        </Button>
       </Accordion>
 
       {loading ? (

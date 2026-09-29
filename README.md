@@ -76,10 +76,10 @@ Cột: `name, password, category, note` (chấp nhận thêm tiêu đề tiếng
 
 ```
 src/
-  components/  Layout, WifiForm, WifiCard, SearchPalette, ui (Modal, Confirm, Swipeable…)
+  components/  Layout, ProtectedRoute, WifiForm, WifiCard, SearchPalette, ScrollTop, ui (Modal, Confirm, Swipeable…)
   context/     Auth, Data, Settings, Toast
   lib/         firebase, db, validate, fileIO (gồm xuất PNG/PDF), clipboard, colors, useMediaQuery
-  pages/       Home, WifiPage, Categories, Stats, SettingsPage, Login
+  pages/       Home, WifiPage, Categories, Stats, SettingsPage, Login, lazyPages (danh sách import động dùng chung)
 ```
 
 ## Triển khai

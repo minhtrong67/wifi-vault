@@ -46,12 +46,8 @@ export default function Home() {
         </div>
       )}
       {/* <div className="grid grid-cols-2 gap-2.5">
-        <Link to="/wifi" className="btn-primary py-3">
-          <Plus size={17} /> Quản lý wifi
-        </Link>
-        <Link to="/wifi" className="btn-success py-3">
-          <Upload size={17} /> Nhập dữ liệu
-        </Link>
+        <Link to="/wifi" className="btn-primary py-3"><Plus size={17} /> Quản lý wifi</Link>
+        <Link to="/wifi" className="btn-success py-3"><Upload size={17} /> Nhập dữ liệu</Link>
       </div> */}
       <section>
         <div className="mb-2.5 flex items-center justify-between">
@@ -82,7 +78,7 @@ export default function Home() {
                   className="flex items-center gap-3 p-3 transition hover:bg-slate-50 dark:hover:bg-zinc-800/60"
                 >
                   <span
-                    className={`grid size-9 shrink-0 place-items-center rounded-xl text-blue-300 bg-blue-600/10`}
+                    className={`grid size-9 shrink-0 place-items-center rounded-xl  bg-blue-600/10 text-blue-300`}
                   >
                     <Wifi size={16} />
                   </span>

@@ -145,7 +145,7 @@ export default function SettingsPage() {
         desc="Tải về bản sao lưu JSON gồm toàn bộ wifi và danh mục."
       >
         <Button
-          className="btn bg-green-600 w-full sm:w-auto"
+          className="btn bg-green-600 text-white w-full sm:w-auto"
           icon={Download}
           disabled={loading}
           onClick={() => {

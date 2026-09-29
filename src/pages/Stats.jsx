@@ -32,7 +32,7 @@ const ChartCard = ({ title, note, children, className = "" }) => (
 /** Tooltip riêng để hỗ trợ giao diện tối */
 const Tip = ({ active, payload }) =>
   active && payload?.length ? (
-    <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs shadow-lg">
+    <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm shadow-lg">
       <p className="font-medium">{payload[0].payload.name}</p>
       <p className="text-slate-500 dark:text-zinc-400">
         {payload[0].value} wifi
@@ -194,7 +194,7 @@ export default function Stats() {
                   <LabelList
                     dataKey="value"
                     position="top"
-                    fontSize={10}
+                    fontSize={13}
                     fontWeight={700}
                     fill="#64748b"
                   />
@@ -296,7 +296,7 @@ export default function Stats() {
                   <LabelList
                     dataKey="value"
                     position="top"
-                    fontSize={10}
+                    fontSize={13}
                     fontWeight={700}
                     fill="#64748b"
                   />

@@ -240,3 +240,17 @@ export const StatCard = ({ icon: Icon, label, value, tone = "blue" }) => (
     <p className="mt-1.5 text-xs text-white/90 md:text-sm">{label}</p>
   </div>
 );
+
+/** Khung skeleton dùng khi một trang đang được tải (lần đầu vào route đó) */
+export const PageSkeleton = () => (
+  <div className="animate-fadeIn space-y-3.5">
+    <Skeleton className="h-8 w-40" />
+    <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <Skeleton className="h-24" />
+      <Skeleton className="h-24" />
+      <Skeleton className="h-24 hidden md:block" />
+      <Skeleton className="h-24 hidden md:block" />
+    </div>
+    <Skeleton className="h-40" />
+  </div>
+);
