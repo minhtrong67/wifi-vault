@@ -1,21 +1,78 @@
+@import '@fontsource/roboto/latin-400.css';
+@import '@fontsource/roboto/latin-500.css';
+@import '@fontsource/roboto/latin-700.css';
+@import '@fontsource/roboto/latin-ext-400.css';
+@import '@fontsource/roboto/latin-ext-500.css';
+@import '@fontsource/roboto/latin-ext-700.css';
+@import '@fontsource/roboto/vietnamese-400.css';
+@import '@fontsource/roboto/vietnamese-500.css';
+@import '@fontsource/roboto/vietnamese-700.css';
+@import './theme/default-theme.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Cỡ chữ gốc điều chỉnh được trong Cài đặt (rem của Tailwind co giãn theo) */
-html { font-size: var(--fs, 16px); -webkit-tap-highlight-color: transparent; }
+html { font-size: var(--fs, 16px); -webkit-tap-highlight-color: transparent; color-scheme: light; }
 html.dark { color-scheme: dark; }
-body { @apply bg-slate-50 text-slate-800 antialiased dark:bg-zinc-950 dark:text-zinc-100; font-family: system-ui, sans-serif; }
+body { @apply bg-surface font-sans text-on-surface antialiased; overscroll-behavior-y: none; }
+h1, h2, h3 { font-weight: 400; }
+h3 { font-weight: 500; }
+[inert] { pointer-events: none; }
+::selection { background: rgb(var(--md-primary-container)); color: rgb(var(--md-on-primary-container)); }
+/* Thanh cuộn mảnh, theo màu theme */
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--md-outline-variant)) transparent; }
+:focus-visible { outline: 2px solid rgb(var(--md-primary)); outline-offset: 2px; }
 
 @layer components {
-  .card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none; }
-  /* text-base trên mobile để iOS không tự phóng to khi focus */
-  .input { @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 md:text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-500 dark:focus:ring-blue-500/20; }
-  .input-err { @apply border-red-400 focus:border-red-500 focus:ring-red-100 dark:focus:ring-red-500/20; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-60; }
-  .btn-primary { @apply btn bg-blue-600 text-white hover:bg-blue-700; }
-  .btn-ghost { @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800; }
-  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
-  .btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700; }
+  /* State layer (hover / focus / pressed) của Material 3 + vùng chứa ripple */
+  .state { @apply relative isolate overflow-hidden; }
+  .state::before { content: ''; @apply pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-current opacity-0 transition-opacity duration-200; }
+  @media (hover: hover) { .state:hover::before { opacity: .08; } }
+  .state:focus-visible::before, .state:active::before { opacity: .12; }
+  .ripple-dot { @apply pointer-events-none absolute -z-10 animate-ripple rounded-full bg-current; }
+
+  /* Buttons */
+  .btn { @apply state inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-sm font-medium tracking-[.007em] transition-[box-shadow,background-color,transform] duration-200 ease-emphasized active:scale-[.98] disabled:pointer-events-none disabled:opacity-40; }
+  .btn-icon-lead { @apply pl-4; }
+  .btn-filled { @apply btn bg-primary text-on-primary hover:shadow-el1; }
+  .btn-tonal { @apply btn bg-secondary-container text-on-secondary-container hover:shadow-el1; }
+  .btn-outlined { @apply btn border border-outline text-primary; }
+  .btn-text { @apply btn px-3 text-primary; }
+  .btn-error { @apply btn bg-error text-on-error hover:shadow-el1; }
+  .btn-text-error { @apply btn px-3 text-error; }
+  .icon-btn { @apply state grid size-10 shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform duration-200 active:scale-90 disabled:pointer-events-none disabled:opacity-40; }
+  .fab { @apply state grid size-14 place-items-center rounded-2xl bg-primary-container text-sm font-medium text-on-primary-container shadow-el3 transition-[box-shadow,transform] duration-300 ease-emphasized hover:shadow-el4 active:scale-95; }
+  .fab-small { @apply state grid size-12 place-items-center rounded-2xl bg-surface-container-high text-primary shadow-el2 transition duration-300 ease-emphasized hover:shadow-el3 active:scale-90; }
+
+  /* Cards */
+  .card { @apply rounded-2xl bg-surface-container-low shadow-el1; }
+  .card-outlined { @apply rounded-2xl border border-outline-variant bg-surface; }
+
+  /* Filled text field (floating label) */
+  .tf { @apply relative; }
+  .tf-input { @apply block w-full rounded-t bg-surface-container-highest px-4 pb-2 pt-6 text-base text-on-surface caret-primary outline-none transition-shadow duration-200 md:text-[15px]; box-shadow: inset 0 -1px 0 rgb(var(--md-on-surface-variant)); }
+  .tf-input:hover { box-shadow: inset 0 -1px 0 rgb(var(--md-on-surface)); }
+  .tf-input:focus { box-shadow: inset 0 -2px 0 rgb(var(--md-primary)); }
+  .tf-input.is-error { box-shadow: inset 0 -2px 0 rgb(var(--md-error)); caret-color: rgb(var(--md-error)); }
+  .tf-label { @apply pointer-events-none absolute left-4 top-2 origin-left text-xs text-on-surface-variant transition-all duration-200 ease-emphasized peer-placeholder-shown:top-[17px] peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-xs peer-focus:text-primary; }
+  .tf-input.is-error ~ .tf-label { @apply text-error peer-focus:text-error; }
+  select.tf-input { @apply cursor-pointer appearance-none pr-11; }
+  textarea.tf-input { @apply resize-none; }
+  .tf-support { @apply px-4 pt-1 text-xs text-on-surface-variant; }
+  .tf-support.is-error { @apply text-error; }
+  .searchbar { @apply flex h-14 items-center gap-2 rounded-full bg-surface-container-high pl-4 pr-1.5 text-on-surface-variant transition-shadow duration-200 focus-within:shadow-el1; }
+  .searchbar input { @apply min-w-0 flex-1 bg-transparent text-base text-on-surface outline-none placeholder:text-on-surface-variant md:text-[15px]; }
+  .searchbar input:focus-visible { outline: none; }
+  .searchbar input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; } /* dùng nút xoá của app thay cho nút mặc định của trình duyệt */
+
+  /* Chip / badge nhỏ */
+  .chip { @apply inline-flex h-6 items-center gap-1 rounded-lg px-2 text-xs font-medium; }
 }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Nút cuộn lên đầu trang (48px) tự nâng lên khi trang có FAB (56px) */
+.scrolltop { bottom: 5.75rem; margin-right: 4px; } /* 4px = căn giữa với FAB rộng hơn */
+body[data-fab] .scrolltop { bottom: 10.5rem; }
+@media (min-width: 768px) { .scrolltop { bottom: 1.5rem; } body[data-fab] .scrolltop { bottom: 6.5rem; } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

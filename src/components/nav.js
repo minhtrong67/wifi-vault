@@ -1,10 +1,10 @@
 import { BarChart3, Home, Settings, Tags, Wifi } from 'lucide-react';
 
-/** Danh sách điều hướng. `tab: true` = hiện ở bottom bar mobile (4 tab hay dùng nhất) */
+/** Danh sách điều hướng. `tab: true` = hiện ở thanh điều hướng dưới của mobile (4 mục hay dùng nhất) */
 export const NAV = [
-  { to: '/', label: 'Trang chủ', icon: Home, color: 'text-blue-500', tab: true },
-  { to: '/wifi', label: 'Quản lý wifi', short: 'Wifi', icon: Wifi, color: 'text-cyan-500', tab: true },
-  { to: '/categories', label: 'Danh mục', icon: Tags, color: 'text-violet-500' },
-  { to: '/stats', label: 'Thống kê', icon: BarChart3, color: 'text-emerald-500', tab: true },
-  { to: '/settings', label: 'Cài đặt', icon: Settings, color: 'text-amber-500', tab: true },
+  { to: '/', key: 'nav.home', icon: Home, tab: true },
+  { to: '/wifi', key: 'nav.wifi', shortKey: 'nav.wifiShort', icon: Wifi, tab: true },
+  { to: '/categories', key: 'nav.categories', icon: Tags },
+  { to: '/stats', key: 'nav.stats', icon: BarChart3, tab: true },
+  { to: '/settings', key: 'nav.settings', icon: Settings, tab: true },
 ];

@@ -51,6 +51,13 @@ export async function updateWifi(uid, oldId, w, createdAt) {
 export const deleteWifis = (uid, ids) => runBatches(ids.map((id) => (b) => b.delete(doc(wifisCol(uid), id))));
 
 export const addCategory = (uid, name) => runBatches([(b) => b.set(doc(catsCol(uid), catId(name)), { name, createdAt: Date.now() })]);
+/** Thêm hàng loạt danh mục (nhập file). Danh mục đã tồn tại được giữ nguyên, không bị ghi đè. */
+export async function upsertCategories(uid, names, existingIds = new Set()) {
+  const now = Date.now();
+  const fresh = [...new Map(names.map((n) => [catId(n), n])).entries()].filter(([id]) => !existingIds.has(id));
+  await runBatches(fresh.map(([id, name], i) => (b) => b.set(doc(catsCol(uid), id), { name, createdAt: now + i })));
+  return { total: names.length, added: fresh.length };
+}
 export const deleteCategory = (uid, id) => runBatches([(b) => b.delete(doc(catsCol(uid), id))]);
 
 /** Đổi tên danh mục và cập nhật toàn bộ wifi đang dùng danh mục đó */

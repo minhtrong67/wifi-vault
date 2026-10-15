@@ -1,16 +1,23 @@
 {
+  "id": "/",
   "name": "Wifi Vault",
   "short_name": "Wifi Vault",
-  "description": "Két sắt lưu trữ và quản lý mật khẩu wifi của bạn.",
-  "lang": "vi",
+  "description": "Két sắt lưu trữ và quản lý mật khẩu wifi · A tidy vault for your wifi passwords.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "background_color": "#F8F9FF",
+  "theme_color": "#F8F9FF",
+  "categories": ["utilities", "productivity"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Wifi", "url": "/wifi", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Stats", "url": "/stats", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }

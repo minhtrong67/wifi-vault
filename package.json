@@ -1,10 +1,28 @@
 {
   "name": "wifi-vault",
+  "version": "1.1.0",
   "private": true,
-  "version": "1.0.0",
+  "description": "Wifi Vault – két sắt lưu trữ & quản lý mật khẩu wifi (PWA, Material Design 3, React + Firebase)",
+  "author": "minhtrong67",
+  "license": "MIT",
+  "keywords": [
+    "wifi",
+    "password-manager",
+    "pwa",
+    "material-design",
+    "react",
+    "firebase",
+    "vite"
+  ],
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
+    "@fontsource/roboto": "^5.3.0",
+    "@material/material-color-utilities": "^0.4.0",
     "firebase": "^10.14.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
@@ -20,6 +38,8 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1"
   }
 }

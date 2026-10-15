@@ -1,10 +1,16 @@
-// Import / Export CSV, Excel, JSON
-import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { normalizeWifi } from './validate';
+// Xuất / nhập dữ liệu wifi và danh mục dạng CSV, Excel (XLSX) và JSON.
+// Thư viện xlsx khá nặng nên chỉ được tải khi người dùng thực sự xuất/nhập.
+import { clean, normalizeWifi } from './validate';
 
-const FIELDS = ['name', 'password', 'category', 'note'];
+export const FORMATS = ['csv', 'xlsx', 'json'];
+export const ACCEPT = '.csv,.xlsx,.xls,.json';
+
+/** Lỗi có khoá i18n để hiển thị đúng ngôn ngữ */
+export class FileError extends Error {
+  constructor(key) { super(key); this.key = key; }
+}
+
+const WIFI_FIELDS = ['name', 'password', 'category', 'note'];
 // Cho phép tiêu đề cột tiếng Anh hoặc tiếng Việt
 const ALIASES = {
   name: ['name', 'ten', 'tenwifi', 'ssid'],
@@ -12,13 +18,98 @@ const ALIASES = {
   category: ['category', 'danhmuc'],
   note: ['note', 'ghichu'],
 };
-const key = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z]/g, '');
+const CAT_ALIASES = ['name', 'ten', 'tendanhmuc', 'category', 'danhmuc'];
+const key = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/[^a-z]/g, '');
+const xlsx = () => import('xlsx');
+
+export const download = (blob, filename) => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+export const stamp = () => new Date().toISOString().slice(0, 10);
+const plain = (list) => list.map(({ name, password, category, note }) => ({ name, password, category, note: note || '' }));
+
+/** Ghi mảng đối tượng ra file theo định dạng; trả về số dòng đã xuất */
+async function writeRows(rows, header, sheet, base, format) {
+  if (format === 'json') {
+    download(new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }), `${base}.json`);
+    return rows.length;
+  }
+  const X = await xlsx();
+  const ws = X.utils.json_to_sheet(rows, { header });
+  if (format === 'csv') {
+    // BOM giúp Excel hiển thị đúng tiếng Việt
+    download(new Blob(['﻿' + X.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8' }), `${base}.csv`);
+  } else {
+    ws['!cols'] = header.map((h) => ({ wch: Math.min(40, Math.max(h.length + 2, ...rows.map((r) => String(r[h] ?? '').length + 2))) }));
+    const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, sheet);
+    X.writeFile(wb, `${base}.xlsx`);
+  }
+  return rows.length;
+}
+
+/** Xuất toàn bộ wifi ra CSV | XLSX | JSON */
+export const exportWifis = (list, format) => writeRows(plain(list), WIFI_FIELDS, 'Wifi', `wifi-vault-wifi-${stamp()}`, format);
+/** Xuất danh sách danh mục ra CSV | XLSX | JSON (list: mảng tên hoặc đối tượng { name }) */
+export const exportCategories = (list, format) =>
+  writeRows(list.map((c) => ({ name: typeof c === 'string' ? c : c.name })), ['name'], 'Categories', `wifi-vault-categories-${stamp()}`, format);
+
+/** Xuất cả wifi và danh mục: JSON = một file { wifis, categories }; XLSX = một file hai trang tính; CSV = hai file */
+export async function exportAll(wifis, categories, format) {
+  const w = plain(wifis);
+  const c = categories.map((x) => ({ name: typeof x === 'string' ? x : x.name }));
+  const base = `wifi-vault-${stamp()}`;
+  if (format === 'json') {
+    download(new Blob([JSON.stringify({ wifis: w, categories: c }, null, 2)], { type: 'application/json' }), `${base}.json`);
+  } else if (format === 'xlsx') {
+    const X = await xlsx();
+    const wb = X.utils.book_new();
+    const add = (rows, header, name) => {
+      const ws = X.utils.json_to_sheet(rows, { header });
+      ws['!cols'] = header.map((h) => ({ wch: Math.min(40, Math.max(h.length + 2, ...rows.map((r) => String(r[h] ?? '').length + 2))) }));
+      X.utils.book_append_sheet(wb, ws, name);
+    };
+    add(w, WIFI_FIELDS, 'Wifi');
+    add(c, ['name'], 'Categories');
+    X.writeFile(wb, `${base}.xlsx`);
+  } else {
+    await writeRows(w, WIFI_FIELDS, 'Wifi', `${base}-wifi`, 'csv');
+    await new Promise((r) => setTimeout(r, 400)); // tách hai lần tải để trình duyệt không chặn
+    await writeRows(c, ['name'], 'Categories', `${base}-categories`, 'csv');
+  }
+  return { wifis: w.length, categories: c.length };
+}
+
+/** Đọc file → { rows: mảng đối tượng thô } hoặc { json } (với JSON). `sheet`: tên trang tính ưu tiên với file Excel nhiều trang */
+async function parse(file, sheet) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'json') {
+    try { return { json: JSON.parse((await file.text()).replace(/^﻿/, '')) }; } catch { throw new FileError('settings.data.readFail'); }
+  }
+  if (!['csv', 'xlsx', 'xls'].includes(ext)) throw new FileError('file.errFormat');
+  try {
+    const X = await xlsx();
+    // raw: true giữ nguyên chuỗi trong CSV (không biến "0123456789" thành số 123456789 làm mất số 0 đầu của mật khẩu)
+    const wb = ext === 'csv' ? X.read((await file.text()).replace(/^﻿/, ''), { type: 'string', raw: true }) : X.read(await file.arrayBuffer());
+    const name = wb.SheetNames.find((n) => n.toLowerCase() === sheet) || wb.SheetNames[0];
+    return { rows: X.utils.sheet_to_json(wb.Sheets[name], { defval: '', raw: false }) };
+  } catch {
+    throw new FileError('settings.data.readFail');
+  }
+}
 
 /** Đổi một dòng thô thành object wifi theo alias cột */
-function mapRow(raw) {
-  const out = {};
+function mapWifi(raw) {
+  if (!raw || typeof raw !== 'object') return normalizeWifi({});
   const keys = Object.keys(raw);
-  for (const f of FIELDS) {
+  const out = {};
+  for (const f of WIFI_FIELDS) {
     const k = keys.find((k) => ALIASES[f].includes(key(k)));
     out[f] = k ? raw[k] : '';
   }
@@ -26,125 +117,27 @@ function mapRow(raw) {
 }
 
 /** Đọc file (.csv/.xlsx/.xls/.json) → mảng wifi đã chuẩn hoá */
-export async function readFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'json') {
-    const data = JSON.parse((await file.text()).replace(/^\uFEFF/, ''));
-    const list = Array.isArray(data) ? data : data.wifis;
-    if (!Array.isArray(list)) throw new Error('File JSON phải là một mảng hoặc có thuộc tính "wifis".');
-    return list.map(mapRow);
-  }
-  if (['csv', 'xlsx', 'xls'].includes(ext)) {
-    const wb = ext === 'csv' ? XLSX.read(await file.text(), { type: 'string' }) : XLSX.read(await file.arrayBuffer());
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false });
-    return rows.map(mapRow);
-  }
-  throw new Error('Định dạng không được hỗ trợ. Hãy dùng CSV, Excel hoặc JSON.');
+export async function readWifiFile(file) {
+  const { rows, json } = await parse(file, 'wifi');
+  if (rows) return rows.map(mapWifi);
+  const list = Array.isArray(json) ? json : json?.wifis;
+  if (!Array.isArray(list)) throw new FileError('file.errJson');
+  return list.map(mapWifi);
 }
 
-const download = (blob, filename) => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-};
-const stamp = () => new Date().toISOString().slice(0, 10);
-const plain = (list) => list.map(({ name, password, category, note }) => ({ name, password, category, note }));
-
-/** Xuất danh sách wifi ra CSV | XLSX | JSON */
-export function exportWifis(list, format) {
-  const rows = plain(list);
-  const base = `wifi-vault-${stamp()}`;
-  if (format === 'json') return download(new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }), `${base}.json`);
-  const ws = XLSX.utils.json_to_sheet(rows, { header: FIELDS });
-  if (format === 'csv') {
-    // BOM giúp Excel hiển thị đúng tiếng Việt
-    return download(new Blob(['\uFEFF' + XLSX.utils.sheet_to_csv(ws)], { type: 'text/csv;charset=utf-8' }), `${base}.csv`);
+/** Đọc file → mảng tên danh mục đã chuẩn hoá (chưa kiểm tra hợp lệ) */
+export async function readCategoryFile(file) {
+  const { rows, json } = await parse(file, 'categories');
+  let names;
+  if (rows) {
+    const keys = Object.keys(rows[0] || {});
+    const k = keys.find((k) => CAT_ALIASES.includes(key(k)));
+    // Không có tiêu đề khớp (file chỉ gồm danh sách tên) → dòng đầu bị đọc thành tiêu đề, nên thêm lại làm một danh mục
+    names = k ? rows.map((r) => r[k]) : keys.length ? [keys[0], ...rows.map((r) => r[keys[0]])] : [];
+  } else {
+    const list = Array.isArray(json) ? json : json?.categories;
+    if (!Array.isArray(list)) throw new FileError('file.errJsonCat');
+    names = list.map((c) => (c && typeof c === 'object' ? c.name : c));
   }
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Wifi');
-  XLSX.writeFile(wb, `${base}.xlsx`);
-}
-
-/** Sao lưu toàn bộ dữ liệu (wifi + danh mục) dạng JSON */
-export function exportBackup(wifis, categories) {
-  const data = { app: 'Wifi Vault', exportedAt: new Date().toISOString(), categories: categories.map((c) => c.name), wifis: plain(wifis) };
-  download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `wifi-vault-backup-${stamp()}.json`);
-}
-
-
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-/** Dựng một khối HTML định dạng đẹp (bảng wifi) để chụp thành ảnh/PDF.
- *  Dùng chính DOM + font hệ thống của trình duyệt nên tiếng Việt luôn hiển thị đúng, không lỗi font. */
-function buildExportSheet(list, colorOf) {
-  const th = 'padding:10px 12px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.02em;';
-  const td = 'padding:10px 12px;font-size:13px;border-bottom:1px solid #e2e8f0;vertical-align:top;';
-  const rows = list.map((w, i) => {
-    const c = colorOf ? colorOf(w.category) : null;
-    const bg = i % 2 ? 'background:#f8fafc;' : '';
-    return `<tr style="${bg}">
-      <td style="${td}font-weight:600;color:#0f172a;">${esc(w.name)}</td>
-      <td style="${td}font-family:ui-monospace,monospace;color:#334155;">${esc(w.password)}</td>
-      <td style="${td}"><span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;background:${c ? c.hex + '22' : '#eff6ff'};color:${c ? c.hex : '#2563eb'};">${esc(w.category)}</span></td>
-      <td style="${td}color:#64748b;">${esc(w.note) || '—'}</td>
-    </tr>`;
-  }).join('');
-
-  const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;left:-10000px;top:0;width:860px;background:#ffffff;padding:36px;font-family:system-ui,-apple-system,sans-serif;color:#0f172a;';
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
-      <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;">
-        <svg width="22" height="22" viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"><path d="M14 27a26 26 0 0 1 36 0"/><path d="M21 34a16 16 0 0 1 22 0"/><path d="M28 41a6 6 0 0 1 8 0"/></g><circle cx="32" cy="48" r="3.5" fill="#fff"/></svg>
-      </div>
-      <div>
-        <div style="font-size:22px;font-weight:700;letter-spacing:-.01em;">Wifi Vault</div>
-        <div style="font-size:12px;color:#64748b;margin-top:1px;">Xuất ngày ${esc(new Date().toLocaleString('vi-VN'))} • ${list.length} mạng wifi</div>
-      </div>
-    </div>
-    <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;">
-      <thead><tr style="background:#1d4ed8;color:#fff;">
-        <th style="${th}">Tên wifi</th><th style="${th}">Mật khẩu</th><th style="${th}">Danh mục</th><th style="${th}">Ghi chú</th>
-      </tr></thead>
-      <tbody>${rows || `<tr><td style="${td}color:#94a3b8;" colspan="4">Không có dữ liệu.</td></tr>`}</tbody>
-    </table>
-    <div style="margin-top:20px;text-align:center;font-size:11px;color:#94a3b8;">Wifi Vault · Tác giả minhtrong67 · Với sự hỗ trợ của Claude</div>
-  `;
-  document.body.appendChild(el);
-  return el;
-}
-
-/** Xuất danh sách wifi ra ảnh PNG hoặc PDF (định dạng bảng, không lỗi font tiếng Việt) */
-export async function exportVisual(list, format, colorOf) {
-  const node = buildExportSheet(list, colorOf);
-  try {
-    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-    const base = `wifi-vault-${stamp()}`;
-    if (format === 'png') {
-      await new Promise((resolve) => canvas.toBlob((blob) => { download(blob, `${base}.png`); resolve(); }, 'image/png'));
-      return;
-    }
-    // PDF: nhúng ảnh đã render, tự chia trang nếu danh sách dài
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgData = canvas.toDataURL('image/png');
-    const imgW = pageW;
-    const imgH = (canvas.height / canvas.width) * pageW;
-    let heightLeft = imgH;
-    let position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-    heightLeft -= pageH;
-    while (heightLeft > 0) {
-      position = heightLeft - imgH;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-      heightLeft -= pageH;
-    }
-    pdf.save(`${base}.pdf`);
-  } finally {
-    document.body.removeChild(node);
-  }
+  return names.map(clean);
 }

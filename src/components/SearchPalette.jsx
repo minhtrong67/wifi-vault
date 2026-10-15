@@ -2,39 +2,52 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Wifi } from 'lucide-react';
 import { NAV } from './nav';
+import { useScrollLock } from './ui';
 import { useData } from '../context/DataContext';
+import { useT } from '../context/SettingsContext';
 
-/** Menu tìm nhanh (Ctrl/⌘ + K): nhảy tới trang hoặc mạng wifi */
+/** Menu tìm nhanh (Ctrl/⌘ + K): nhảy tới trang hoặc mạng wifi. Dùng ↑ ↓ để chọn, Enter để mở. */
 export default function SearchPalette({ open, onClose }) {
   const { wifis } = useData();
+  const { t } = useT();
   const nav = useNavigate();
   const [q, setQ] = useState('');
+  const [active, setActive] = useState(0);
   const ref = useRef();
-  useEffect(() => { if (open) { setQ(''); setTimeout(() => ref.current?.focus(), 30); } }, [open]);
+  useScrollLock(open);
+  useEffect(() => { if (open) { setQ(''); setActive(0); setTimeout(() => ref.current?.focus(), 30); } }, [open]);
   const results = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const pages = NAV.filter((n) => !s || n.label.toLowerCase().includes(s)).map((n) => ({ key: n.to, label: n.label, icon: n.icon, color: n.color, to: n.to }));
-    const items = s ? (wifis || []).filter((w) => `${w.name} ${w.note}`.toLowerCase().includes(s)).slice(0, 6).map((w) => ({ key: w.id, label: w.name, sub: w.category, icon: Wifi, to: `/wifi?q=${encodeURIComponent(w.name)}` })) : [];
+    const pages = NAV.map((n) => ({ key: n.to, label: t(n.key), icon: n.icon, to: n.to })).filter((n) => !s || n.label.toLowerCase().includes(s));
+    const items = s ? (wifis || []).filter((w) => `${w.name} ${w.note} ${w.category}`.toLowerCase().includes(s)).slice(0, 6).map((w) => ({ key: w.id, label: w.name, sub: w.category, icon: Wifi, to: `/wifi?q=${encodeURIComponent(w.name)}` })) : [];
     return [...pages, ...items];
-  }, [q, wifis]);
+  }, [q, wifis, t]);
+  useEffect(() => setActive(0), [q]);
   const go = (to) => { onClose(); nav(to); };
+  const key = (e) => {
+    if (e.key === 'Escape') onClose();
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+    else if (e.key === 'Enter' && results[active]) go(results[active].to);
+  };
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/40 p-4 pt-[12vh] animate-fadeIn" onMouseDown={onClose}>
-      <div className="w-full max-w-lg animate-pop overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-slate-100 dark:border-zinc-800 px-4">
-          <Search size={18} className="text-slate-400" />
-          <input ref={ref} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); if (e.key === 'Enter' && results[0]) go(results[0].to); }}
-            placeholder="Tìm trang hoặc mạng wifi…" className="w-full bg-transparent py-4 text-sm outline-none" />
-          <kbd className="hidden rounded border border-slate-200 dark:border-zinc-800 px-1.5 text-xs text-slate-400 sm:block">Esc</kbd>
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-scrim/40 p-4 pt-[10vh] animate-fadeIn" onMouseDown={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={t('search.quick')} className="w-full max-w-lg animate-pop overflow-hidden rounded-[28px] bg-surface-container-high shadow-el3" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="flex h-14 items-center gap-3 border-b border-outline-variant px-5">
+          <Search size={20} className="text-on-surface-variant" />
+          <input ref={ref} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={key} placeholder={t('search.placeholder')}
+            className="h-full w-full bg-transparent text-base text-on-surface outline-none placeholder:text-on-surface-variant" />
+          <kbd className="hidden rounded bg-surface-container-highest px-1.5 py-0.5 text-xs text-on-surface-variant sm:block">Esc</kbd>
         </div>
-        <ul className="max-h-72 overflow-y-auto p-2">
-          {results.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-400">Không tìm thấy kết quả.</li>}
-          {results.map((r) => (
-            <li key={r.key}>
-              <button onClick={() => go(r.to)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-blue-50 dark:hover:bg-blue-500/10">
-                <r.icon size={17} className={r.color || 'text-blue-600 dark:text-blue-400'} /> {r.label}
-                {r.sub && <span className="ml-auto text-xs text-slate-400">{r.sub}</span>}
+        <ul className="max-h-80 overflow-y-auto p-2" role="listbox">
+          {results.length === 0 && <li className="px-3 py-8 text-center text-sm text-on-surface-variant">{t('search.empty')}</li>}
+          {results.map((r, i) => (
+            <li key={r.key} role="option" aria-selected={i === active}>
+              <button type="button" onMouseMove={() => setActive(i)} onClick={() => go(r.to)}
+                className={`flex h-12 w-full items-center gap-3 rounded-full px-4 text-left text-sm transition-colors ${i === active ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface'}`}>
+                <r.icon size={18} className={i === active ? '' : 'text-primary'} /> <span className="truncate">{r.label}</span>
+                {r.sub && <span className="ml-auto shrink-0 text-xs opacity-70">{r.sub}</span>}
               </button>
             </li>
           ))}

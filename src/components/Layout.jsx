@@ -1,75 +1,131 @@
-import { Suspense, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LogOut, Menu, Search, Wifi, X } from 'lucide-react';
+import { Suspense, useEffect, useLayoutEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, Menu, Moon, Search, Sun, Monitor } from 'lucide-react';
 import { NAV } from './nav';
 import SearchPalette from './SearchPalette';
 import ScrollTop from './ScrollTop';
-import { PageSkeleton } from './ui';
+import { IconButton, PageSkeleton, ripple, useScrollLock } from './ui';
 import { useAuth } from '../context/AuthContext';
+import { useSettings, useT } from '../context/SettingsContext';
 
-const linkCls = ({ isActive }) =>
-  `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${isActive ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`;
+let launched = false; // chỉ chuyển tới "trang mặc định" đúng một lần mỗi lần mở app
 
-/** Khung ứng dụng: header mobile, sidebar (drawer trên mobile), bottom bar, tìm nhanh Ctrl+K */
+/** Nút đổi nhanh sáng → tối → hệ thống */
+function ThemeToggle({ className = '' }) {
+  const { settings, update, dark } = useSettings();
+  const { t } = useT();
+
+  const nextTheme = {
+    light: 'dark',
+    dark: 'system',
+    system: 'light',
+  };
+
+  return (
+    <IconButton
+      icon={settings.theme === 'system' ? Monitor : dark ? Sun : Moon}
+      label={
+        settings.theme === 'system'
+          ? t('theme.system')
+          : dark
+            ? t('theme.toggleLight')
+            : t('theme.toggleDark')
+      }
+      className={className}
+      onClick={() => update({ theme: nextTheme[settings.theme] ?? 'system' })}
+      data-mode={settings.theme}
+    />
+  );
+}
+
+/** Khung ứng dụng Material 3: top app bar + navigation bar (mobile), navigation drawer (desktop), tìm nhanh Ctrl+K */
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
+  const { t } = useT();
   const [drawer, setDrawer] = useState(false);
   const [search, setSearch] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  useScrollLock(drawer);
 
-  useEffect(() => setDrawer(false), [pathname]);
+  // Mở app → chuyển tới trang mặc định người dùng chọn (không ép lại khi tự bấm "Trang chủ")
+  useLayoutEffect(() => {
+    if (launched) return;
+    launched = true;
+    if (pathname === '/' && settings.startPage !== '/' && NAV.some((n) => n.to === settings.startPage)) navigate(settings.startPage, { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { setDrawer(false); window.scrollTo(0, 0); }, [pathname]);
   useEffect(() => {
-    const h = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearch((s) => !s); } };
+    const h = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearch((s) => !s); }
+      if (e.key === 'Escape') setDrawer(false);
+    };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, []);
 
   const sidebar = (
-    <div className="flex h-full flex-col p-4">
-      <div className="mb-6 flex items-center gap-2.5 px-2 text-lg font-semibold">
-        <span className="grid size-9 place-items-center rounded-xl bg-blue-600 text-white"><Wifi size={19} /></span> Wifi Vault
+    <div className="flex h-full flex-col px-3 py-5">
+      <div className="flex items-center justify-between gap-2 pl-3 pr-1">
+        <span className="truncate text-[22px] text-on-surface">Wifi Vault</span>
+        <ThemeToggle className="hidden md:grid" />
       </div>
-      <nav className="space-y-1">{NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.to === '/'} className={linkCls}><n.icon size={18} className={n.color} /> {n.label}</NavLink>)}</nav>
+      <nav className="mt-6 space-y-1" aria-label="Main">
+        {NAV.map((n) => (
+          <NavLink key={n.to} to={n.to} end={n.to === '/'} onPointerDown={ripple}
+            className={({ isActive }) => `state flex h-14 items-center gap-3 rounded-full px-4 text-sm font-medium transition-colors duration-200 ${isActive ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant'}`}>
+            <n.icon size={22} /> {t(n.key)}
+          </NavLink>
+        ))}
+      </nav>
       <div className="mt-auto space-y-3">
-        <button onClick={() => setSearch(true)} className="hidden w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-800 px-3 py-2 text-sm text-slate-500 dark:text-zinc-400 transition hover:bg-slate-50 dark:hover:bg-zinc-800/60 md:flex">
-          <Search size={16} /> Tìm nhanh <kbd className="ml-auto text-xs">Ctrl K</kbd>
+        <button type="button" onClick={() => setSearch(true)} onPointerDown={ripple} className="state hidden h-12 w-full items-center gap-3 rounded-full border border-outline-variant px-4 text-sm text-on-surface-variant md:flex">
+          <Search size={18} /> {t('search.quick')} <kbd className="ml-auto rounded bg-surface-container-highest px-1.5 py-0.5 text-xs">Ctrl K</kbd>
         </button>
-        <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 p-2.5">
-          {user.photoURL ? <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="size-9 rounded-full" /> : <span className="size-9 rounded-full bg-blue-100 dark:bg-blue-500/20" />}
-          <div className="min-w-0 flex-1 text-sm"><p className="truncate font-medium">{user.displayName}</p><p className="truncate text-xs text-slate-500 dark:text-zinc-400">{user.email}</p></div>
-          <button onClick={logout} aria-label="Đăng xuất" className="rounded-lg p-2 text-slate-400 transition hover:bg-white dark:hover:bg-zinc-900 hover:text-red-600"><LogOut size={17} /></button>
+        <div className="flex items-center gap-3 rounded-2xl bg-surface-container-high p-3">
+          {user.photoURL ? <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="size-10 rounded-full" /> : <span className="size-10 rounded-full bg-primary-container" />}
+          <div className="min-w-0 flex-1 text-sm"><p className="truncate font-medium">{user.displayName}</p><p className="truncate text-xs text-on-surface-variant">{user.email}</p></div>
+          <IconButton icon={LogOut} label={t('auth.logout')} onClick={logout} size={18} className="hover:text-error" />
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-dvh md:pl-64">
-      {/* Sidebar cố định trên desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 md:block">{sidebar}</aside>
-      {/* Drawer trên mobile */}
-      {drawer && <div className="fixed inset-0 z-40 bg-slate-900/40 animate-fadeIn md:hidden" onClick={() => setDrawer(false)} />}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 shadow-xl transition-transform duration-300 md:hidden ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>{sidebar}</aside>
+    <div className="min-h-dvh md:pl-72">
+      {/* Navigation drawer cố định trên desktop */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-outline-variant/60 bg-surface-container-low md:block">{sidebar}</aside>
+      {/* Drawer dạng modal trên mobile */}
+      <div className={`fixed inset-0 z-40 bg-scrim/40 transition-opacity duration-300 md:hidden ${drawer ? 'opacity-100' : 'pointer-events-none opacity-0'}`} onClick={() => setDrawer(false)} />
+      <aside inert={drawer ? undefined : ''} className={`fixed inset-y-0 left-0 z-50 w-[19rem] max-w-[85vw] rounded-r-[28px] bg-surface-container-low shadow-el3 transition-transform duration-300 ease-emphasized md:hidden ${drawer ? 'translate-x-0' : '-translate-x-full'}`}>{sidebar}</aside>
 
-      {/* Header mobile: trái = tên web + toggle sidebar, phải = tìm kiếm */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-white/85 dark:bg-zinc-900/85 px-3 py-2.5 backdrop-blur md:hidden">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setDrawer(!drawer)} aria-label="Mở menu" className="rounded-lg p-1.5 text-slate-600 dark:text-zinc-300 transition hover:bg-slate-100 dark:hover:bg-zinc-800">{drawer ? <X size={21} /> : <Menu size={21} />}</button>
-          <span className="flex items-center gap-1.5 font-semibold"><Wifi size={18} className="text-blue-600 dark:text-blue-400" /> Wifi Vault</span>
-        </div>
-        <button onClick={() => setSearch(true)} aria-label="Tìm kiếm" className="rounded-lg p-2 text-slate-600 dark:text-zinc-300 transition hover:bg-slate-100 dark:hover:bg-zinc-800"><Search size={20} /></button>
+      {/* Top app bar (mobile) */}
+      <header className="sticky top-0 z-20 flex h-16 items-center gap-1 bg-surface/90 px-1.5 backdrop-blur md:hidden">
+        <IconButton icon={Menu} label={t('nav.menu')} onClick={() => setDrawer(true)} className="text-on-surface" />
+        <span className="flex-1 truncate text-[22px] text-on-surface">Wifi Vault</span>
+        <IconButton icon={Search} label={t('search.open')} onClick={() => setSearch(true)} className="text-on-surface-variant" />
+        <ThemeToggle className="text-on-surface-variant" />
       </header>
 
-      {/* Chỉ vùng nội dung này hiện skeleton khi tải trang mới — header/sidebar/bottom bar luôn giữ nguyên */}
-      <main className="mx-auto max-w-5xl px-3.5 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
-        <Suspense fallback={<PageSkeleton />}><Outlet /></Suspense>
+      {/* Chỉ vùng nội dung này hiện skeleton khi tải trang mới — khung ứng dụng luôn giữ nguyên */}
+      <main className="mx-auto max-w-5xl px-4 pb-32 pt-3 md:px-8 md:pb-24 md:pt-8">
+        <Suspense fallback={<PageSkeleton />}>
+          <div key={pathname} className="animate-fadeThrough"><Outlet /></div>
+        </Suspense>
       </main>
 
-      {/* Bottom bar mobile: 4 tab hay dùng */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      {/* Navigation bar (mobile): 4 mục hay dùng */}
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 bg-surface-container pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV.filter((n) => n.tab).map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-            <n.icon size={21} /> {n.short || n.label}
+          <NavLink key={n.to} to={n.to} end={n.to === '/'} className="group flex flex-col items-center gap-1 pb-3 pt-3 text-xs font-medium">
+            {({ isActive }) => (
+              <>
+                <span className={`grid h-8 w-16 place-items-center rounded-full transition-colors duration-300 ease-emphasized group-active:scale-95 ${isActive ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant'}`}><n.icon size={22} /></span>
+                <span className={isActive ? 'text-on-surface' : 'text-on-surface-variant'}>{t(n.shortKey || n.key)}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -1,25 +1,49 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Wifi Vault – Két sắt mật khẩu wifi</title>
-    <meta name="description" content="Wifi Vault giúp bạn lưu trữ, tìm kiếm và quản lý mật khẩu wifi gọn gàng, an toàn." />
+    <title>Wifi Vault</title>
+    <meta name="description" content="Wifi Vault – a tidy vault to store, search and manage your wifi passwords." />
     <meta name="author" content="minhtrong67" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#F8F9FF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Wifi Vault" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta property="og:title" content="Wifi Vault" />
-    <meta property="og:description" content="Két sắt lưu trữ và quản lý mật khẩu wifi." />
+    <meta property="og:description" content="A tidy vault to store and manage your wifi passwords." />
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-      <script>try{var s=JSON.parse(localStorage.getItem('wifi-vault:settings')||'{}');var t=s.theme||'system';if(t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <script>
+      // Chạy trước khi React render để không bị nháy: áp dụng chế độ sáng/tối, màu chủ đề đã chọn và ngôn ngữ
+      try {
+        var s = JSON.parse(localStorage.getItem('wifi-vault:settings') || '{}');
+        var t = s.theme || 'system';
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+        var c = JSON.parse(localStorage.getItem('wifi-vault:theme-css') || 'null');
+        if (c && s.seed && c.seed === s.seed) {
+          var st = document.createElement('style'); st.id = 'md-theme'; st.textContent = c.css; document.head.appendChild(st);
+        }
+        var l = s.lang && s.lang !== 'auto' ? s.lang : (navigator.languages && navigator.languages[0] || navigator.language || 'en');
+        document.documentElement.lang = String(l).toLowerCase().indexOf('vi') === 0 ? 'vi' : 'en';
+        document.documentElement.style.setProperty('--fs', (s.fontSize || 16) + 'px');
+        // Thanh trạng thái + manifest theo giao diện người dùng chọn (kể cả khi khác với hệ thống)
+        var bg = dark ? '#111418' : '#F8F9FF';
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function (n) { n.remove(); });
+        var m = document.createElement('meta'); m.name = 'theme-color'; m.content = bg; document.head.appendChild(m);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>Wifi Vault needs JavaScript to run.</noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

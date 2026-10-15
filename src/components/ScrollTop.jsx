@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { useT } from '../context/SettingsContext';
+import { ripple } from './ui';
 
-/** Nút cuộn lên đầu trang, chỉ hiện khi đã cuộn xuống một đoạn */
+/** Nút cuộn lên đầu trang: trượt vào khi đã cuộn xuống một đoạn, tự nâng lên nếu trang có FAB */
 export default function ScrollTop() {
+  const { t } = useT();
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const h = () => setShow(window.scrollY > 400);
+    let raf = 0;
+    const h = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setShow(window.scrollY > 400)); };
     window.addEventListener('scroll', h, { passive: true });
     h();
-    return () => window.removeEventListener('scroll', h);
+    return () => { window.removeEventListener('scroll', h); cancelAnimationFrame(raf); };
   }, []);
-  if (!show) return null;
+  const go = () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   return (
-    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Cuộn lên đầu trang"
-      className="fixed bottom-24 right-4 z-30 grid size-11 animate-pop place-items-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-700 active:scale-90 md:bottom-6">
-      <ArrowUp size={19} />
+    <button type="button" onClick={go} onPointerDown={ripple} aria-label={t('common.scrollTop')} title={t('common.scrollTop')} tabIndex={show ? 0 : -1}
+      className={`fab-small scrolltop fixed right-4 z-30 transition-[opacity,transform] duration-300 ease-emphasized md:right-8 ${show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}>
+      <ArrowUp size={24} />
     </button>
   );
 }

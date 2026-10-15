@@ -15,27 +15,28 @@ export const normalizeWifi = (w) => ({
   note: clean(w.note),
 });
 
-/** Trả về object lỗi theo field; rỗng nghĩa là hợp lệ */
+/** Trả về object lỗi theo field dạng { key, params } (dịch bằng t()); rỗng nghĩa là hợp lệ */
 export function validateWifi(w, categoryNames = null) {
   const e = {};
-  if (!w.name) e.name = 'Vui lòng nhập tên wifi.';
-  else if (w.name.length > LIMITS.name) e.name = `Tên wifi tối đa ${LIMITS.name} ký tự.`;
-  if (!w.password) e.password = 'Vui lòng nhập mật khẩu.';
+  if (!w.name) e.name = { key: 'val.nameRequired' };
+  else if (w.name.length > LIMITS.name) e.name = { key: 'val.nameMax', params: { n: LIMITS.name } };
+  if (!w.password) e.password = { key: 'val.passRequired' };
   else if (w.password.length < LIMITS.passMin || w.password.length > LIMITS.passMax)
-    e.password = `Mật khẩu phải từ ${LIMITS.passMin} đến ${LIMITS.passMax} ký tự.`;
-  if (!w.category) e.category = 'Vui lòng chọn danh mục.';
-  else if (w.category.length > LIMITS.category) e.category = `Danh mục tối đa ${LIMITS.category} ký tự.`;
-  else if (categoryNames && !categoryNames.includes(w.category)) e.category = 'Danh mục không tồn tại.';
-  if (w.note.length > LIMITS.note) e.note = `Ghi chú tối đa ${LIMITS.note} ký tự.`;
+    e.password = { key: 'val.passRange', params: { min: LIMITS.passMin, max: LIMITS.passMax } };
+  if (!w.category) e.category = { key: 'val.catRequired' };
+  else if (w.category.length > LIMITS.category) e.category = { key: 'val.catMax', params: { n: LIMITS.category } };
+  else if (categoryNames && !categoryNames.includes(w.category)) e.category = { key: 'val.catMissing' };
+  if (w.note.length > LIMITS.note) e.note = { key: 'val.noteMax', params: { n: LIMITS.note } };
   return e;
 }
 
+/** Trả về null nếu hợp lệ, hoặc { key, params } */
 export const validateCategory = (name, existing, selfName = null) => {
   const n = clean(name);
-  if (!n) return 'Vui lòng nhập tên danh mục.';
-  if (n.length > LIMITS.category) return `Tên danh mục tối đa ${LIMITS.category} ký tự.`;
-  if (existing.some((x) => x.toLowerCase() === n.toLowerCase() && x !== selfName)) return 'Danh mục này đã tồn tại.';
-  return '';
+  if (!n) return { key: 'val.catNameRequired' };
+  if (n.length > LIMITS.category) return { key: 'val.catNameMax', params: { n: LIMITS.category } };
+  if (existing.some((x) => x.toLowerCase() === n.toLowerCase() && x !== selfName)) return { key: 'val.catExists' };
+  return null;
 };
 
 /** Khoá duy nhất theo tên wifi (không phân biệt hoa thường/dấu) → ID document.

@@ -1,75 +1,34 @@
-import { memo, useState } from "react";
-import { Copy, Eye, EyeOff, Pencil, Trash2, Wifi } from "lucide-react";
-import { Swipeable } from "./ui";
-import { copyText } from "../lib/clipboard";
-import { useToast } from "../context/ToastContext";
+import { memo, useState } from 'react';
+import { Copy, Eye, EyeOff, Pencil, Trash2, Wifi } from 'lucide-react';
+import { IconButton, Swipeable } from './ui';
+import { copyText } from '../lib/clipboard';
+import { useToast } from '../context/ToastContext';
+import { useT } from '../context/SettingsContext';
 
 /** Thẻ hiển thị một mạng wifi, màu theo danh mục (memo để tránh render lại không cần thiết) */
 function WifiCard({ wifi, accent, onEdit, onDelete }) {
+  const { t } = useT();
   const [show, setShow] = useState(false);
   const toast = useToast();
-  const copy = async () =>
-    (await copyText(wifi.password))
-      ? toast.success("Đã sao chép mật khẩu.")
-      : toast.error("Không thể sao chép.");
+  const copy = async () => ((await copyText(wifi.password)) ? toast.success(t('wifi.toast.copied')) : toast.error(t('wifi.toast.copyFail')));
   return (
     <Swipeable onEdit={() => onEdit(wifi)} onDelete={() => onDelete(wifi)}>
-      <div className="flex items-start gap-3 rounded-2xl border border-slate-200 dark:border-zinc-800 p-3 transition hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 md:p-4">
-        <span
-          className={`grid size-10 shrink-0 place-items-center rounded-xl  bg-blue-600/10 text-blue-300`}
-        >
-          <Wifi size={18} />
-        </span>
+      <div className="state flex items-start gap-3 rounded-2xl bg-surface-container-low p-4 shadow-el1 transition-shadow duration-200 hover:shadow-el2">
+        <span style={accent.tile} className="grid size-12 shrink-0 place-items-center rounded-2xl"><Wifi size={22} /></span>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[15px] font-medium leading-tight">
-            {wifi.name}
-          </h3>
-          <span
-            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${accent.chip}`}
-          >
-            {wifi.category}
-          </span>
-          <p className="mt-1.5 break-all font-mono text-[13px] text-slate-600 dark:text-zinc-300">
-            {show
-              ? wifi.password
-              : "•".repeat(Math.min(wifi.password.length, 14))}
+          <h3 className="truncate text-base font-medium leading-6 text-on-surface">{wifi.name}</h3>
+          <span style={accent.chip} className="chip mt-0.5">{wifi.category}</span>
+          <p className="mt-2 break-all font-mono text-[13px] tracking-wide text-on-surface-variant">
+            {show ? wifi.password : '•'.repeat(Math.min(wifi.password.length, 14))}
           </p>
-          {wifi.note && (
-            <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-zinc-400">
-              {wifi.note}
-            </p>
-          )}
+          {wifi.note && <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant/80">{wifi.note}</p>}
         </div>
-        <div className="flex shrink-0 items-center text-slate-400">
-          <button
-            onClick={() => setShow(!show)}
-            aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            className="rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200"
-          >
-            {show ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
-          <button
-            onClick={copy}
-            aria-label="Sao chép mật khẩu"
-            className="rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            <Copy size={17} />
-          </button>
+        <div className="-mr-2 -mt-1 flex shrink-0 items-center">
+          <IconButton icon={show ? EyeOff : Eye} size={19} label={show ? t('wifi.card.hide') : t('wifi.card.show')} onClick={() => setShow(!show)} aria-pressed={show} />
+          <IconButton icon={Copy} size={19} label={t('wifi.card.copy')} onClick={copy} />
           {/* Nút bấm dự phòng cho desktop (chuột không vuốt được) */}
-          <button
-            onClick={() => onEdit(wifi)}
-            aria-label="Sửa"
-            className="hidden rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-blue-600 dark:hover:text-blue-400 md:block"
-          >
-            <Pencil size={17} />
-          </button>
-          <button
-            onClick={() => onDelete(wifi)}
-            aria-label="Xoá"
-            className="hidden rounded-lg p-2 transition hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 md:block"
-          >
-            <Trash2 size={17} />
-          </button>
+          <IconButton icon={Pencil} size={19} label={t('common.edit')} onClick={() => onEdit(wifi)} className="hidden md:grid" />
+          <IconButton icon={Trash2} size={19} label={t('common.delete')} onClick={() => onDelete(wifi)} className="hidden hover:text-error md:grid" />
         </div>
       </div>
     </Swipeable>

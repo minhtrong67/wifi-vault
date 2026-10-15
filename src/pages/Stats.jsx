@@ -1,305 +1,164 @@
-import { useMemo } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { FileText, KeyRound, Tags, Wifi } from "lucide-react";
-import { useData } from "../context/DataContext";
-import { Skeleton, StatCard } from "../components/ui";
-import { useMediaQuery } from "../lib/useMediaQuery";
+import { useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Download, FileImage, FileText, KeyRound, StickyNote, Tags, Wifi } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { useSettings, useT } from '../context/SettingsContext';
+import { useToast } from '../context/ToastContext';
+import { MenuButton, PageHeader, Skeleton, StatCard } from '../components/ui';
+import { useMediaQuery } from '../lib/useMediaQuery';
+import { exportReport } from '../lib/report';
 
-const LEN_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"]; // mỗi nhóm độ dài một màu
-const AXIS = { fontSize: 12, fill: "#64748b" };
 const RAD = Math.PI / 180;
 
-const ChartCard = ({ title, note, children, className = "" }) => (
-  <div className={`card p-3.5 md:p-4 ${className}`}>
-    <h2 className="font-medium">{title}</h2>
-    <p className="mb-3 text-xs text-slate-500 dark:text-zinc-400">{note}</p>
+const ChartCard = ({ title, note, children, className = '' }) => (
+  <div className={`card animate-fadeThrough p-4 md:p-5 ${className}`}>
+    <h2 className="text-base font-medium text-on-surface">{title}</h2>
+    <p className="mb-3 text-xs text-on-surface-variant">{note}</p>
     {children}
   </div>
 );
 
-/** Tooltip riêng để hỗ trợ giao diện tối */
-const Tip = ({ active, payload }) =>
+/** Tooltip riêng để theo đúng màu theme (sáng/tối) */
+const Tip = ({ active, payload, unit }) =>
   active && payload?.length ? (
-    <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm shadow-lg">
+    <div className="rounded-xl bg-inverse-surface px-3 py-2 text-sm text-inverse-on-surface shadow-el2">
       <p className="font-medium">{payload[0].payload.name}</p>
-      <p className="text-slate-500 dark:text-zinc-400">
-        {payload[0].value} wifi
-      </p>
+      <p className="opacity-80">{payload[0].value} {unit}</p>
     </div>
   ) : null;
 
 /** Số lượng hiển thị ngay trong lát cắt của biểu đồ tròn (ẩn nếu lát quá nhỏ) */
-const sliceLabel = ({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
-  value,
-}) => {
+const sliceLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }) => {
   if (percent < 0.05) return null;
   const r = innerRadius + (outerRadius - innerRadius) / 2;
-  return (
-    <text
-      x={cx + r * Math.cos(-midAngle * RAD)}
-      y={cy + r * Math.sin(-midAngle * RAD)}
-      fill="#fff"
-      fontSize={10}
-      fontWeight={700}
-      textAnchor="middle"
-      dominantBaseline="central"
-    >
-      {value}
-    </text>
-  );
+  return <text x={cx + r * Math.cos(-midAngle * RAD)} y={cy + r * Math.sin(-midAngle * RAD)} fill="#fff" fontSize={11} fontWeight={700} textAnchor="middle" dominantBaseline="central">{value}</text>;
 };
 
-/** Trang thống kê: thẻ số liệu + biểu đồ cột (độ dài mật khẩu), tròn, cột (danh mục) */
+/** Trang thống kê: thẻ số liệu + biểu đồ cột (độ dài mật khẩu), tròn, cột (danh mục) + xuất báo cáo PDF/PNG */
 export default function Stats() {
   const { wifis, categories, loading, colorOf } = useData();
-  const mobile = useMediaQuery("(max-width: 640px)");
+  const { t, lang } = useT();
+  const { colors, lightColors } = useSettings();
+  const toast = useToast();
+  const mobile = useMediaQuery('(max-width: 640px)');
+  const [exporting, setExporting] = useState(false);
 
   const s = useMemo(() => {
     if (!wifis) return null;
-    const byCat = Object.entries(
-      wifis.reduce(
-        (m, w) => ((m[w.category] = (m[w.category] || 0) + 1), m),
-        {},
-      ),
-    )
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    const byCat = Object.entries(wifis.reduce((m, w) => ((m[w.category] = (m[w.category] || 0) + 1), m), {}))
+      .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, lang));
     const buckets = [
-      ["8 ký tự", (l) => l === 8],
-      ["9–10 ký tự", (l) => l >= 9 && l <= 10],
-      ["11–12 ký tự", (l) => l >= 11 && l <= 12],
-      ["13+ ký tự", (l) => l >= 13],
+      ['stats.bucket.8', (l) => l <= 8],
+      ['stats.bucket.9', (l) => l >= 9 && l <= 10],
+      ['stats.bucket.11', (l) => l >= 11 && l <= 12],
+      ['stats.bucket.13', (l) => l >= 13],
     ];
-    const byLen = buckets.map(([name, f]) => ({
-      name,
-      value: wifis.filter((w) => f(w.password.length)).length,
-    }));
-    const avg = wifis.length
-      ? (
-          wifis.reduce((a, w) => a + w.password.length, 0) / wifis.length
-        ).toFixed(1)
-      : 0;
+    const byLen = buckets.map(([k, f]) => ({ k, value: wifis.filter((w) => f(w.password.length)).length }));
+    const avg = wifis.length ? (wifis.reduce((a, w) => a + w.password.length, 0) / wifis.length).toFixed(1) : '0';
     return { byCat, byLen, avg, withNote: wifis.filter((w) => w.note).length };
-  }, [wifis]);
+  }, [wifis, lang]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="space-y-3.5">
-        <Skeleton className="h-8 w-40" />
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-48" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
         <Skeleton className="h-72" />
       </div>
     );
+  }
 
   const total = wifis.length;
-  const grid = (
-    <CartesianGrid
-      strokeDasharray="3 3"
-      vertical={false}
-      stroke="#94a3b8"
-      strokeOpacity={0.3}
-    />
-  );
+  const lenData = s.byLen.map((x) => ({ name: t(x.k), value: x.value }));
+  const axis = { fontSize: 12, fill: colors.onSurfaceVariant };
+  const grid = <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.outlineVariant} strokeOpacity={0.7} />;
+  const cursor = { fill: colors.onSurface, fillOpacity: 0.06 };
+  const labelFill = colors.onSurfaceVariant;
+
+  const runExport = async (format) => {
+    setExporting(true);
+    try {
+      await exportReport({ format, s: { ...s, byLen: lenData }, total, categoriesCount: categories.length, colors: lightColors, t, lang, colorOf });
+      toast.success(t('stats.export.done', { fmt: format.toUpperCase() }));
+    } catch (e) {
+      console.error(e);
+      toast.error(t('stats.export.fail'));
+    } finally { setExporting(false); }
+  };
+
   return (
-    <div className="space-y-3.5 md:space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-          Thống kê
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-zinc-400">
-          Tổng quan về kho wifi của bạn
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
-        <StatCard icon={Wifi} label="Tổng số wifi" value={total} tone="blue" />
-        <StatCard
-          icon={Tags}
-          label="Danh mục"
-          value={categories.length}
-          tone="emerald"
-        />
-        <StatCard
-          icon={KeyRound}
-          label="Độ dài mật khẩu TB"
-          value={`${s.avg} ký tự`}
-          tone="violet"
-        />
-        <StatCard
-          icon={FileText}
-          label="Wifi có ghi chú"
-          value={s.withNote}
-          tone="amber"
-        />
+    <div className="space-y-4">
+      <PageHeader title={t('stats.title')} subtitle={t('stats.subtitle')}>
+        <MenuButton label={exporting ? t('stats.export.busy') : t('stats.export')} icon={Download} loading={exporting} disabled={total === 0}
+          items={[
+            { key: 'pdf', label: t('stats.export.pdf'), icon: FileText, onClick: () => runExport('pdf') },
+            { key: 'png', label: t('stats.export.png'), icon: FileImage, onClick: () => runExport('png') },
+          ]} />
+      </PageHeader>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard icon={Wifi} label={t('stats.total')} value={total} tone="primary" />
+        <StatCard icon={Tags} label={t('stats.categories')} value={categories.length} tone="secondary" />
+        <StatCard icon={KeyRound} label={t('stats.avgLen')} value={t('stats.chars', { n: s.avg })} tone="tertiary" />
+        <StatCard icon={StickyNote} label={t('stats.withNote')} value={s.withNote} tone="neutral" />
       </div>
       {total === 0 ? (
-        <div className="card p-10 text-center text-sm text-slate-500 dark:text-zinc-400">
-          Chưa có dữ liệu để thống kê.
-        </div>
+        <div className="card p-10 text-center text-sm text-on-surface-variant">{t('stats.empty')}</div>
       ) : (
-        <div className="grid gap-3.5 md:gap-4 lg:grid-cols-2">
-          {/* Biểu đồ cột: độ dài mật khẩu */}
-          <ChartCard
-            title="Độ dài mật khẩu"
-            note="Trục dọc là số wifi, trục ngang là nhóm độ dài mật khẩu"
-          >
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Biểu đồ cột: độ dài mật khẩu (thứ tự → một màu chủ đề, đậm dần) */}
+          <ChartCard title={t('stats.lenTitle')} note={t('stats.lenNote')}>
             <ResponsiveContainer width="100%" height={mobile ? 230 : 270}>
-              <BarChart
-                data={s.byLen}
-                margin={{ top: 22, right: 6, left: -22, bottom: 0 }}
-              >
+              <BarChart data={lenData} margin={{ top: 22, right: 6, left: -22, bottom: 0 }}>
                 {grid}
-                <XAxis
-                  dataKey="name"
-                  tick={{ ...AXIS, fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={AXIS}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  content={<Tip />}
-                  cursor={{ fill: "#94a3b8", fillOpacity: 0.12 }}
-                />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={56}>
-                  {s.byLen.map((_, i) => (
-                    <Cell key={i} fill={LEN_COLORS[i]} />
-                  ))}
-                  <LabelList
-                    dataKey="value"
-                    position="top"
-                    fontSize={13}
-                    fontWeight={700}
-                    fill="#64748b"
-                  />
+                <XAxis dataKey="name" tick={{ ...axis, fontSize: 11 }} axisLine={false} tickLine={false} interval={0} />
+                <YAxis allowDecimals={false} tick={axis} axisLine={false} tickLine={false} />
+                <Tooltip content={<Tip unit={t('common.wifiUnit')} />} cursor={cursor} />
+                <Bar dataKey="value" radius={[10, 10, 0, 0]} maxBarSize={56} animationDuration={600}>
+                  {lenData.map((_, i) => <Cell key={i} fill={colors.primary} fillOpacity={0.4 + i * 0.2} />)}
+                  <LabelList dataKey="value" position="top" fontSize={13} fontWeight={700} fill={labelFill} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 
           {/* Biểu đồ tròn: tỷ lệ theo danh mục, chú thích HTML bên dưới để không tràn trên mobile */}
-          <ChartCard
-            title="Tỷ lệ theo danh mục"
-            note="Số trong lát cắt là số wifi; phần trăm ở chú thích bên dưới"
-          >
+          <ChartCard title={t('stats.ratioTitle')} note={t('stats.ratioNote')}>
             <div className="relative">
               <ResponsiveContainer width="100%" height={mobile ? 210 : 240}>
                 <PieChart>
-                  <Pie
-                    data={s.byCat}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius="48%"
-                    outerRadius="92%"
-                    paddingAngle={2}
-                    stroke="none"
-                    label={sliceLabel}
-                    labelLine={false}
-                  >
-                    {s.byCat.map((c) => (
-                      <Cell key={c.name} fill={colorOf(c.name).hex} />
-                    ))}
+                  <Pie data={s.byCat} dataKey="value" nameKey="name" innerRadius="48%" outerRadius="92%" paddingAngle={2} stroke="none" label={sliceLabel} labelLine={false} animationDuration={600}>
+                    {s.byCat.map((c) => <Cell key={c.name} fill={colorOf(c.name).hex} />)}
                   </Pie>
-                  <Tooltip content={<Tip />} />
+                  <Tooltip content={<Tip unit={t('common.wifiUnit')} />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
-                <div>
-                  <p className="text-2xl font-semibold leading-none">{total}</p>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    wifi
-                  </p>
-                </div>
+                <div><p className="text-3xl leading-none text-on-surface">{total}</p><p className="mt-1 text-xs text-on-surface-variant">{t('common.wifiUnit')}</p></div>
               </div>
             </div>
             <ul className="mt-3 grid grid-cols-2 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-3">
               {s.byCat.map((c) => (
                 <li key={c.name} className="flex items-center gap-1.5">
-                  <span
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ background: colorOf(c.name).hex }}
-                  />
+                  <span className="size-2.5 shrink-0 rounded-full" style={{ background: colorOf(c.name).hex }} />
                   <span className="truncate">{c.name}</span>
-                  <span className="ml-auto shrink-0 font-semibold">
-                    {c.value}
-                  </span>
-                  <span className="shrink-0 text-xs text-slate-500 dark:text-zinc-400">
-                    {Math.round((c.value / total) * 100)}%
-                  </span>
+                  <span className="ml-auto shrink-0 font-semibold">{c.value}</span>
+                  <span className="shrink-0 text-on-surface-variant">{Math.round((c.value / total) * 100)}%</span>
                 </li>
               ))}
             </ul>
           </ChartCard>
 
-          {/* Biểu đồ cột: số wifi theo danh mục (thay cho biểu đồ cột ngang) */}
-          <ChartCard
-            className="lg:col-span-2"
-            title="Số wifi theo danh mục"
-            note="Mỗi cột là một danh mục, sắp xếp từ nhiều đến ít"
-          >
+          {/* Biểu đồ cột: số wifi theo danh mục */}
+          <ChartCard className="lg:col-span-2" title={t('stats.countTitle')} note={t('stats.countNote')}>
             <ResponsiveContainer width="100%" height={mobile ? 290 : 300}>
-              <BarChart
-                data={s.byCat}
-                margin={{ top: 22, right: 6, left: -22, bottom: 0 }}
-              >
+              <BarChart data={s.byCat} margin={{ top: 22, right: 6, left: -22, bottom: 0 }}>
                 {grid}
-                <XAxis
-                  dataKey="name"
-                  interval={0}
-                  tick={{ ...AXIS, fontSize: 10 }}
-                  angle={mobile ? -40 : 0}
-                  textAnchor={mobile ? "end" : "middle"}
-                  height={mobile ? 70 : 30}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={AXIS}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  content={<Tip />}
-                  cursor={{ fill: "#94a3b8", fillOpacity: 0.12 }}
-                />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={48}>
-                  {s.byCat.map((c) => (
-                    <Cell key={c.name} fill={colorOf(c.name).hex} />
-                  ))}
-                  <LabelList
-                    dataKey="value"
-                    position="top"
-                    fontSize={13}
-                    fontWeight={700}
-                    fill="#64748b"
-                  />
+                <XAxis dataKey="name" interval={0} tick={{ ...axis, fontSize: 11 }} angle={mobile ? -40 : 0} textAnchor={mobile ? 'end' : 'middle'} height={mobile ? 70 : 30} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={axis} axisLine={false} tickLine={false} />
+                <Tooltip content={<Tip unit={t('common.wifiUnit')} />} cursor={cursor} />
+                <Bar dataKey="value" radius={[10, 10, 0, 0]} maxBarSize={48} animationDuration={600}>
+                  {s.byCat.map((c) => <Cell key={c.name} fill={colorOf(c.name).hex} />)}
+                  <LabelList dataKey="value" position="top" fontSize={13} fontWeight={700} fill={labelFill} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
