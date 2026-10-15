@@ -1,6 +1,10 @@
 // Material 3 theming: biến schema màu (Material Theme Builder) thành CSS variables dạng "R G B"
 // để Tailwind dùng được kèm độ trong suốt, ví dụ `bg-primary/10`.
-import defaultTheme from './material-theme.json';
+import baseTheme from './material-theme.json';
+import blue from './material-blue.json';
+
+// Theme mặc định = file Material Theme Builder + màu primary là đúng Material Blue (xem material-blue.json)
+const defaultTheme = { schemes: { light: { ...baseTheme.schemes.light, ...blue.light }, dark: { ...baseTheme.schemes.dark, ...blue.dark } } };
 
 export const DEFAULT_SEED = '#2196F3';
 

@@ -2,45 +2,139 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Wifi Vault</title>
-    <meta name="description" content="Wifi Vault – a tidy vault to store, search and manage your wifi passwords." />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Primary SEO -->
+    <title>Wifi Vault – Secure WiFi Password Manager</title>
+    <meta
+      name="description"
+      content="Wifi Vault helps you organize, search, and manage your WiFi passwords in one clean, convenient place."
+    />
     <meta name="author" content="minhtrong67" />
+    <meta name="application-name" content="Wifi Vault" />
+    <meta name="keywords" content="Wifi Vault, WiFi password manager, WiFi password storage, wireless network manager, password organizer" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://wifi-vault-v2.vercel.app/" />
+
+    <!-- Theme and display preferences -->
     <meta name="theme-color" content="#F8F9FF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <!-- PWA / Mobile -->
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Wifi Vault" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta property="og:title" content="Wifi Vault" />
-    <meta property="og:description" content="A tidy vault to store and manage your wifi passwords." />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph: Facebook, LinkedIn, Discord, Messenger -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wifi Vault" />
+    <meta property="og:title" content="Wifi Vault – Secure WiFi Password Manager" />
+    <meta
+      property="og:description"
+      content="Organize, search, and manage your WiFi passwords in one clean, convenient place."
+    />
+    <meta property="og:url" content="https://wifi-vault-v2.vercel.app/" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="vi_VN" />
+    <meta property="og:image" content="https://wifi-vault-v2.vercel.app/og-image.png" />
+    <meta property="og:image:secure_url" content="https://wifi-vault-v2.vercel.app/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Wifi Vault – WiFi password manager" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wifi Vault – Secure WiFi Password Manager" />
+    <meta
+      name="twitter:description"
+      content="Organize, search, and manage your WiFi passwords in one clean, convenient place."
+    />
+    <meta name="twitter:image" content="https://wifi-vault-v2.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Wifi Vault – WiFi password manager" />
+
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Wifi Vault",
+        "url": "https://wifi-vault-v2.vercel.app/",
+        "description": "Organize, search, and manage your WiFi passwords in one clean, convenient place.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "inLanguage": ["en", "vi"],
+        "image": "https://wifi-vault-v2.vercel.app/og-image.png",
+        "author": { "@type": "Person", "name": "minhtrong67" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
+    <!-- Early theme and language initialization -->
     <script>
-      // Chạy trước khi React render để không bị nháy: áp dụng chế độ sáng/tối, màu chủ đề đã chọn và ngôn ngữ
       try {
         var s = JSON.parse(localStorage.getItem('wifi-vault:settings') || '{}');
         var t = s.theme || 'system';
-        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark =
+          t === 'dark' ||
+          (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+
         if (dark) document.documentElement.classList.add('dark');
+
         var c = JSON.parse(localStorage.getItem('wifi-vault:theme-css') || 'null');
+
         if (c && s.seed && c.seed === s.seed) {
-          var st = document.createElement('style'); st.id = 'md-theme'; st.textContent = c.css; document.head.appendChild(st);
+          var st = document.createElement('style');
+          st.id = 'md-theme';
+          st.textContent = c.css;
+          document.head.appendChild(st);
         }
-        var l = s.lang && s.lang !== 'auto' ? s.lang : (navigator.languages && navigator.languages[0] || navigator.language || 'en');
-        document.documentElement.lang = String(l).toLowerCase().indexOf('vi') === 0 ? 'vi' : 'en';
-        document.documentElement.style.setProperty('--fs', (s.fontSize || 16) + 'px');
-        // Thanh trạng thái + manifest theo giao diện người dùng chọn (kể cả khi khác với hệ thống)
+
+        var l =
+          s.lang && s.lang !== 'auto'
+            ? s.lang
+            : (navigator.languages && navigator.languages[0]) ||
+              navigator.language ||
+              'en';
+
+        document.documentElement.lang =
+          String(l).toLowerCase().indexOf('vi') === 0 ? 'vi' : 'en';
+
+        document.documentElement.style.setProperty(
+          '--fs',
+          (s.fontSize || 16) + 'px'
+        );
+
         var bg = dark ? '#111418' : '#F8F9FF';
-        document.querySelectorAll('meta[name="theme-color"]').forEach(function (n) { n.remove(); });
-        var m = document.createElement('meta'); m.name = 'theme-color'; m.content = bg; document.head.appendChild(m);
+
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function (n) {
+          n.remove();
+        });
+
+        var m = document.createElement('meta');
+        m.name = 'theme-color';
+        m.content = bg;
+        document.head.appendChild(m);
       } catch (e) {}
     </script>
   </head>
+
   <body>
     <div id="root"></div>
     <noscript>Wifi Vault needs JavaScript to run.</noscript>

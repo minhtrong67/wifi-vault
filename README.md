@@ -52,6 +52,7 @@ Screenshots live in the [`screenshots/`](screenshots) folder.
 - Add, edit, delete, search, filter by category and sort (filters in an accordion with a **Reset filters** button)
 - Add / edit in a Material **sheet drawer** (bottom sheet on mobile, side sheet on desktop)
 - Swipe right to edit, swipe left to delete (with confirmation); buttons on desktop
+- Filters and sorting (newest first by default) are remembered per page for the browser session
 - Quick search with `Ctrl/⌘ + K`
 - Names are unique: importing a network with an existing name overwrites it instead of duplicating it
 
@@ -116,7 +117,7 @@ VITE_FIREBASE_APP_ID=...
 | UI | React 18, React Router 6 |
 | Build | Vite 5 |
 | Styling | Tailwind CSS 3 with Material 3 colour tokens |
-| Design system | Material Design 3, `@material/material-color-utilities`, Roboto |
+| Design system | Material Design 3, `@material/material-color-utilities` |
 | Backend | Firebase Authentication (Google) + Cloud Firestore |
 | Charts | Recharts |
 | Files | SheetJS (`xlsx`), jsPDF, html2canvas |

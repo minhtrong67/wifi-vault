@@ -7,15 +7,17 @@ import { useT } from '../context/SettingsContext';
 import WifiCard from '../components/WifiCard';
 import WifiForm from '../components/WifiForm';
 import { Accordion, Button, ConfirmDialog, EmptyState, Fab, IconButton, PageHeader, Sheet, Skeleton, TextField } from '../components/ui';
+import { useSessionState } from '../lib/useSessionState';
 import { deleteWifis, updateWifi, upsertWifis } from '../lib/db';
 
-const DEFAULT_SORT = 'name-asc';
+const DEFAULT_SORT = 'new';
+const DEFAULT_FILTERS = { q: '', cat: '', sort: DEFAULT_SORT };
 const SORTS = {
+  new: ['wifi.sort.newest', (a, b) => (b.createdAt || 0) - (a.createdAt || 0)],
+  old: ['wifi.sort.oldest', (a, b) => (a.createdAt || 0) - (b.createdAt || 0)],
   'name-asc': ['wifi.sort.nameAsc', (a, b, l) => a.name.localeCompare(b.name, l)],
   'name-desc': ['wifi.sort.nameDesc', (a, b, l) => b.name.localeCompare(a.name, l)],
   'cat-asc': ['wifi.sort.category', (a, b, l) => a.category.localeCompare(b.category, l) || a.name.localeCompare(b.name, l)],
-  new: ['wifi.sort.newest', (a, b) => (b.createdAt || 0) - (a.createdAt || 0)],
-  old: ['wifi.sort.oldest', (a, b) => (a.createdAt || 0) - (b.createdAt || 0)],
 };
 
 /** Trang quản lý wifi: tìm kiếm / lọc / sắp xếp, thêm - sửa - xoá (nhập/xuất dữ liệu nằm ở trang Cài đặt) */
@@ -25,16 +27,21 @@ export default function WifiPage() {
   const toast = useToast();
   const [params] = useSearchParams();
   const urlQ = params.get('q') || '';
-  const [q, setQ] = useState(urlQ);
-  const [cat, setCat] = useState('');
-  const [sort, setSort] = useState(DEFAULT_SORT);
+  // Bộ lọc được ghi nhớ trong sessionStorage để chuyển trang rồi quay lại vẫn còn
+  const [filters, setFilters] = useSessionState('wifi-vault:filters:wifi', DEFAULT_FILTERS);
+  const q = filters.q;
+  const cat = categories?.some((c) => c.name === filters.cat) || !categories ? filters.cat : ''; // danh mục đã bị xoá → bỏ lọc
+  const sort = SORTS[filters.sort] ? filters.sort : DEFAULT_SORT;
+  const setQ = (v) => setFilters((f) => ({ ...f, q: v }));
+  const setCat = (v) => setFilters((f) => ({ ...f, cat: v }));
+  const setSort = (v) => setFilters((f) => ({ ...f, sort: v }));
   const [form, setForm] = useState(null); // null | {} (thêm) | wifi (sửa)
   const [pendingEdit, setPendingEdit] = useState(null); // dữ liệu chờ xác nhận sửa
   const [toDelete, setToDelete] = useState(null);
   const dq = useDeferredValue(q);
 
   // Tìm nhanh (Ctrl+K) có thể điều hướng tới /wifi?q=… khi đang ở sẵn trang này
-  useEffect(() => setQ(urlQ), [urlQ]);
+  useEffect(() => { if (urlQ) setQ(urlQ); }, [urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const list = useMemo(() => {
     const s = dq.trim().toLowerCase();
@@ -44,7 +51,7 @@ export default function WifiPage() {
       .sort((a, b) => cmp(a, b, lang));
   }, [wifis, dq, cat, sort, lang]);
   const activeFilters = (q.trim() ? 1 : 0) + (cat ? 1 : 0) + (sort !== DEFAULT_SORT ? 1 : 0);
-  const resetFilters = () => { setQ(''); setCat(''); setSort(DEFAULT_SORT); };
+  const resetFilters = () => setFilters(DEFAULT_FILTERS);
 
   const openAdd = () => (categories.length ? setForm({}) : toast.info(t('wifi.needCategory')));
   const submit = async (data) => {

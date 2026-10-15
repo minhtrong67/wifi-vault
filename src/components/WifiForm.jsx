@@ -29,7 +29,7 @@ export default function WifiForm({ initial, categories, wifis, onSubmit, onCance
 
   return (
     <form onSubmit={submit} noValidate className="space-y-4">
-      <TextField label={t('wifi.form.name')} error={errors.name} value={v.name} onChange={set('name')} onBlur={blur('name')} maxLength={LIMITS.name + 10} autoFocus autoComplete="off" />
+      <TextField label={t('wifi.form.name')} error={errors.name} value={v.name} onChange={set('name')} onBlur={blur('name')} maxLength={LIMITS.name + 10} autoComplete="off" />
       <TextField label={t('wifi.form.password')} error={errors.password} hint={t('wifi.form.passHint', { min: LIMITS.passMin, max: LIMITS.passMax })}
         type={show ? 'text' : 'password'} value={v.password} onChange={set('password')} onBlur={blur('password')} autoComplete="off" spellCheck={false}
         trailing={<IconButton icon={show ? EyeOff : Eye} size={19} label={show ? t('wifi.card.hide') : t('wifi.card.show')} onClick={() => setShow(!show)} />} />

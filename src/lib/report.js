@@ -1,13 +1,13 @@
 // Xuất báo cáo thống kê ra PDF hoặc PNG.
 // Báo cáo được dựng thành một khối HTML riêng (màu cố định, nền sáng) rồi chụp bằng html2canvas, nên
-// luôn đẹp, dễ in và không phụ thuộc chế độ sáng/tối hay kích thước màn hình. Dùng font hệ thống/Roboto nên tiếng Việt không lỗi.
+// luôn đẹp, dễ in và không phụ thuộc chế độ sáng/tối hay kích thước màn hình. Dùng font hệ thống (system-ui) nên tiếng Việt không lỗi.
 import { download, stamp } from './fileIO';
 import { ACCENTS } from './colors';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const W = 900; // chiều rộng khối báo cáo (px)
 
-const LOGO = `<svg width="48" height="48" viewBox="0 0 64 64"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A7DB3"/><stop offset="1" stop-color="#274F7D"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#rg)"/><g transform="translate(0 -2)"><g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"><path d="M12.7 23a30 30 0 0 1 38.6 0"/><path d="M19.1 30.7a20 20 0 0 1 25.8 0"/><path d="M25.6 38.3a10 10 0 0 1 12.8 0"/></g><circle cx="32" cy="47.5" r="5.5" fill="#D1E4FF"/><circle cx="32" cy="47" r="1.9" fill="#274F7D"/><path d="M31 48h2l.5 3.3h-3z" fill="#274F7D"/></g></svg>`;
+const LOGO = `<svg width="48" height="48" viewBox="0 0 64 64"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2196F3"/><stop offset="1" stop-color="#1E88E5"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#rg)"/><g transform="translate(0 -2)"><g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"><path d="M12.7 23a30 30 0 0 1 38.6 0"/><path d="M19.1 30.7a20 20 0 0 1 25.8 0"/><path d="M25.6 38.3a10 10 0 0 1 12.8 0"/></g><circle cx="32" cy="47.5" r="5.5" fill="#E3F2FD"/><circle cx="32" cy="47" r="1.9" fill="#1565C0"/><path d="M31 48h2l.5 3.3h-3z" fill="#1565C0"/></g></svg>`;
 
 function donut(byCat, total, c, colorOf) {
   const R = 70, C = 2 * Math.PI * R;
@@ -45,7 +45,7 @@ function buildSheet({ s, total, categoriesCount }, c, t, lang, colorOf) {
       <div style="width:32px;font-size:14px;font-weight:700;">${x.value}</div></div>`).join('');
 
   const el = document.createElement('div');
-  el.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;box-sizing:border-box;background:${c.surface};padding:40px;font-family:Roboto,system-ui,-apple-system,'Segoe UI',sans-serif;color:${c.onSurface};`;
+  el.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;box-sizing:border-box;background:${c.surface};padding:40px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:${c.onSurface};`;
   el.innerHTML = `
     <div data-block style="display:flex;align-items:center;gap:16px;">
       ${LOGO}

@@ -19,7 +19,7 @@ export default {
   theme: {
     extend: {
       colors: Object.fromEntries(TOKENS.map((t) => [t, c(t)])),
-      fontFamily: { sans: ['Roboto', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'] },
+      fontFamily: { sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'] },
       // Hình khối Material 3: extra-small 4 · small 8 · medium 12 · large 16 · extra-large 28
       borderRadius: { '4xl': '28px' },
       // Đổ bóng theo cấp độ elevation của Material 3

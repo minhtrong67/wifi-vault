@@ -2,8 +2,8 @@
 export default {
   'app.name': 'Wifi Vault',
   'app.tagline': 'A tidy vault for all your wifi passwords.',
-  'app.description': 'Wifi Vault helps you store, search and manage wifi passwords neatly and securely.',
-  'app.title': 'Wifi Vault – wifi password vault',
+  'app.description': 'Wifi Vault helps you organize, search, and manage your WiFi passwords in one clean, convenient place.',
+  'app.title': 'Wifi Vault – Secure WiFi Password Manager',
 
   'common.cancel': 'Cancel',
   'common.save': 'Save',
@@ -239,6 +239,7 @@ export default {
   'data.loadFail': 'Could not load data. Check your connection or the Firestore rules.',
   'theme.toggleLight': 'Switch to light mode',
   'theme.toggleDark': 'Switch to dark mode',
+  'theme.system': 'Following system theme (tap to switch to light)',
   'cat.search': 'Search categories',
   'cat.found': '{shown} of {total} categories',
   'cat.noResults': 'No category found',

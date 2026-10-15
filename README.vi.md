@@ -52,6 +52,7 @@ Wifi Vault lưu mọi tên và mật khẩu wifi của bạn ở một nơi, đ�
 - Thêm, sửa, xoá, tìm kiếm, lọc theo danh mục và sắp xếp (bộ lọc dạng accordion, có nút **Đặt lại bộ lọc**)
 - Thêm / sửa bằng **sheet drawer** Material (trượt từ đáy trên mobile, từ cạnh phải trên desktop)
 - Vuốt phải để sửa, vuốt trái để xoá (có xác nhận); desktop dùng nút bấm
+- Bộ lọc và sắp xếp (mặc định mới nhất) được ghi nhớ theo từng trang trong phiên trình duyệt
 - Tìm nhanh bằng `Ctrl/⌘ + K`
 - Tên wifi là duy nhất: nhập file có tên trùng sẽ **ghi đè**, không tạo bản sao
 
@@ -116,7 +117,7 @@ VITE_FIREBASE_APP_ID=...
 | UI | React 18, React Router 6 |
 | Build | Vite 5 |
 | Styling | Tailwind CSS 3 với token màu Material 3 |
-| Design system | Material Design 3, `@material/material-color-utilities`, Roboto |
+| Design system | Material Design 3, `@material/material-color-utilities` |
 | Backend | Firebase Authentication (Google) + Cloud Firestore |
 | Biểu đồ | Recharts |
 | File | SheetJS (`xlsx`), jsPDF, html2canvas |

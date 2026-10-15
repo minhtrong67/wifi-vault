@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useT } from '../context/SettingsContext';
 import { Button, ConfirmDialog, EmptyState, Fab, Modal, PageHeader, Skeleton, Swipeable, TextField, IconButton } from '../components/ui';
+import { useSessionState } from '../lib/useSessionState';
 import { addCategory, deleteCategory, renameCategory } from '../lib/db';
 import { clean, LIMITS, validateCategory } from '../lib/validate';
 
@@ -18,7 +19,7 @@ export default function Categories() {
   const [pending, setPending] = useState(null); // tên mới chờ xác nhận
   const [del, setDel] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useSessionState('wifi-vault:filters:categories', ''); // ghi nhớ khi chuyển trang
   const dq = useDeferredValue(q);
   const shown = useMemo(() => {
     const s = dq.trim().toLowerCase();

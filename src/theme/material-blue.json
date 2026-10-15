@@ -1,0 +1,19 @@
+{
+  "description": "Ghi đè các token primary của material-theme.json bằng đúng bảng màu Blue của Material Design (500 #2196F3, 100 #BBDEFB, 200 #90CAF9, 300 #64B5F6, 700 #1976D2, 800 #1565C0, 900 #0D47A1). Secondary, tertiary, surface… giữ nguyên theo file theme.",
+  "light": {
+    "primary": "#2196F3",
+    "surfaceTint": "#2196F3",
+    "onPrimary": "#FFFFFF",
+    "primaryContainer": "#BBDEFB",
+    "onPrimaryContainer": "#0D47A1",
+    "inversePrimary": "#64B5F6"
+  },
+  "dark": {
+    "primary": "#64B5F6",
+    "surfaceTint": "#64B5F6",
+    "onPrimary": "#0B2E63",
+    "primaryContainer": "#1565C0",
+    "onPrimaryContainer": "#E3F2FD",
+    "inversePrimary": "#1976D2"
+  }
+}

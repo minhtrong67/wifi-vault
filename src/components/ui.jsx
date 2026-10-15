@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Loader2, Pencil, Trash2, TriangleAlert, X } from 'lucide-react';
 import { useT } from '../context/SettingsContext';
 
@@ -83,7 +84,8 @@ export function Modal({ open, onClose, title, children, wide }) {
     return () => { window.removeEventListener('keydown', h); prev?.focus?.({ preventScroll: true }); };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Render ra <body> để không bị ảnh hưởng bởi style của phần tử cha (vd. space-y-4 thêm margin-top cho phần tử fixed)
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4 animate-fadeIn" onMouseDown={onClose}>
       <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()}
         className={`max-h-[88dvh] w-full ${wide ? 'max-w-lg' : 'max-w-md'} animate-pop overflow-y-auto rounded-4xl bg-surface-container-high p-6 shadow-el3 outline-none`}>
@@ -93,11 +95,12 @@ export function Modal({ open, onClose, title, children, wide }) {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
-/** Sheet drawer Material 3: trượt từ đáy màn hình trên mobile, từ cạnh phải trên desktop. Đóng bằng Esc, bấm nền hoặc nút đóng. */
+/** Sheet drawer Material 3 toàn màn hình: trượt từ đáy lên, nội dung căn giữa (tối đa 36rem). Đóng bằng Esc hoặc nút đóng; không tự focus vào ô nhập. */
 export function Sheet({ open, onClose, title, children }) {
   const { t } = useT();
   const ref = useRef();
@@ -123,19 +126,22 @@ export function Sheet({ open, onClose, title, children }) {
     return () => { window.removeEventListener('keydown', h); prev?.focus?.({ preventScroll: true }); };
   }, [open, onClose]);
   if (!mounted) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50">
-      <div className={`absolute inset-0 bg-scrim/40 transition-opacity duration-300 ${shown ? 'opacity-100' : 'opacity-0'}`} onMouseDown={onClose} />
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title}
-        className={`absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col rounded-t-[28px] bg-surface-container-low shadow-el3 transition-transform duration-300 ease-emphasized md:inset-x-auto md:inset-y-0 md:right-0 md:max-h-none md:w-[28rem] md:rounded-l-[28px] md:rounded-tr-none ${shown ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full md:translate-y-0'}`}>
-        <div aria-hidden="true" className="mx-auto mt-3 h-1 w-8 shrink-0 rounded-full bg-on-surface-variant/40 md:hidden" />
-        <div className="flex shrink-0 items-center justify-between gap-3 px-6 pb-2 pt-3 md:pt-5">
-          <h2 className="text-2xl leading-8 text-on-surface">{title}</h2>
-          <IconButton icon={X} label={t('common.close')} onClick={onClose} className="-mr-2" />
+        className={`absolute inset-0 flex flex-col bg-surface transition-[transform,opacity] duration-300 ease-emphasized ${shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
+        <div className="shrink-0 border-b border-outline-variant/60 bg-surface-container-low">
+          <div className="mx-auto flex h-16 w-full max-w-xl items-center gap-2 px-2">
+            <IconButton icon={X} label={t('common.close')} onClick={onClose} className="text-on-surface" />
+            <h2 className="min-w-0 flex-1 truncate text-[22px] leading-7 text-on-surface">{title}</h2>
+          </div>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">{children}</div>
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto w-full max-w-xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">{children}</div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
