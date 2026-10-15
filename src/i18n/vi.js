@@ -239,6 +239,7 @@ export default {
   'data.loadFail': 'Không thể tải dữ liệu. Hãy kiểm tra kết nối hoặc Firestore rules.',
   'theme.toggleLight': 'Chuyển sang giao diện sáng',
   'theme.toggleDark': 'Chuyển sang giao diện tối',
+  'theme.system': 'Đang theo giao diện hệ thống (bấm để chuyển sang sáng)',
   'cat.search': 'Tìm danh mục',
   'cat.found': '{shown} / {total} danh mục',
   'cat.noResults': 'Không tìm thấy danh mục',
